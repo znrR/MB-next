@@ -220,6 +220,30 @@
   padding-top: 40%;
   z-index: 9999;
 }
+
+    #orientation-warning {
+  position: fixed;
+  z-index: 2000;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  padding: 30px;
+  box-sizing: border-box;
+}
+
+.orientation-box {
+  max-width: 300px;
+  line-height: 1.5;
+}
   </style>
 </head>
 <body>
@@ -230,8 +254,10 @@
     <div class="spinner" id="spinner"></div>
     <div class="drag-overlay" id="dragOverlay"></div>
     
-    <div id="rotateNotice">
-  <p>🔄 Please rotate device to landscape</p>
+<div id="orientation-warning" style="display:none;">
+  <div class="orientation-box">
+    🔄 Please rotate device to landscape 🔄
+  </div>
 </div>
 
     <div class="scene-buttons">
@@ -753,21 +779,23 @@ function startInitialRotation() {
 }
 
 function checkOrientation() {
-  const rotateNotice = document.getElementById("rotateNotice");
-  const isMobile = window.innerWidth <= 768;
-  const isPortrait = window.innerHeight > window.innerWidth;
+  const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+  const warning = document.getElementById("orientation-warning");
 
-  if (isMobile && isPortrait) {
-    rotateNotice.style.display = "block";
+  if (isPortrait && window.innerWidth < 768) {
+    warning.style.display = "flex";
   } else {
-    rotateNotice.style.display = "none";
+    warning.style.display = "none";
   }
 }
 
-window.addEventListener("load", checkOrientation);
+// Initial check
+checkOrientation();
+
+// Event listeners
 window.addEventListener("resize", checkOrientation);
 window.addEventListener("orientationchange", checkOrientation);
-
+    
   </script>
 </body>
 </html>
