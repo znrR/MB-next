@@ -221,7 +221,7 @@
   z-index: 9999;
 }
 
-    #orientation-warning {
+#orientation-warning {
   position: fixed;
   z-index: 2000;
   top: 0;
@@ -229,7 +229,7 @@
   width: 100vw;
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.95);
-  display: flex;
+  display: none;
   justify-content: center;
   align-items: center;
   color: white;
@@ -778,23 +778,27 @@ function startInitialRotation() {
   }, 80);
 }
 
-function checkOrientation() {
-  const isPortrait = window.matchMedia("(orientation: portrait)").matches;
-  const warning = document.getElementById("orientation-warning");
+function isMobilePortrait() {
+  const isMobile = /iPhone|Android/i.test(navigator.userAgent);
+  const isPortrait = window.innerHeight > window.innerWidth;
+  return isMobile && isPortrait;
+}
 
-  if (isPortrait && window.innerWidth < 768) {
+function updateOrientationWarning() {
+  const warning = document.getElementById("orientation-warning");
+  if (isMobilePortrait()) {
     warning.style.display = "flex";
   } else {
     warning.style.display = "none";
   }
 }
 
-// Initial check
-checkOrientation();
-
-// Event listeners
-window.addEventListener("resize", checkOrientation);
-window.addEventListener("orientationchange", checkOrientation);
+// Check at load
+window.addEventListener("load", updateOrientationWarning);
+// And on resize (for iOS Safari in particular)
+window.addEventListener("resize", updateOrientationWarning);
+// Some iOS versions need orientationchange too
+window.addEventListener("orientationchange", updateOrientationWarning);
     
   </script>
 </body>
