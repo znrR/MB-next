@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Stefans Next Step</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+      background-color: #000;
+      background-image: url('beach_day.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      transition: background-image 0.5s ease-in-out;
+    }
+    .viewer-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    .no-bg-transition {
+      transition: none !important;
+    }
+    #carImage, #carImageNext {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+      transform: translateY(0%);
+      transition: opacity 0.5s ease-in-out;
+    }
+    #carImageNext {
+      opacity: 0;
+      z-index: 2;
+    }
+    #carImage.dimming {
+      filter: brightness(0.9);
+    }
+    .drag-overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1001;
+      cursor: grab;
+    }
+    .drag-overlay.dragging {
+      cursor: grabbing;
+    }
+    .toggle-buttons {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+      z-index: 1002;
+    }
+    .toggle-buttons button {
+      background: rgba(255, 255, 255, 0.85);
+      border: none;
+      border-radius: 20px;
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .scene-buttons {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      gap: 12px;
+      z-index: 1002;
+    }
+    .scene-buttons button {
+      background: rgba(255, 255, 255, 0.85);
+      border: none;
+      border-radius: 20px;
+      padding: 10px 15px;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.6);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 24px;
+      line-height: 38px;
+      text-align: center;
+      z-index: 1002;
+      cursor: pointer;
+      user-select: none;
+    }
+    .arrow.left { left: 20px; }
+    .arrow.right { right: 20px; }
+    .arrow.hidden { display: none; }
+    .spinner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 999;
+      width: 60px;
+      height: 60px;
+      border: 8px solid #ccc;
+      border-top: 8px solid #333;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      display: none;
+    }
+    @keyframes spin {
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    .flag {
+      display: inline-block;
+      transition: transform 0.2s ease-in-out;
+    }
+    .scene-buttons button.active .flag {
+      animation: waveFlag 0.6s ease-in-out infinite;
+      display: inline-block;
+    }
+    @keyframes waveFlag {
+      0%   { transform: rotate(0deg); }
+      25%  { transform: rotate(4deg); }
+      50%  { transform: rotate(2deg); }
+      75%  { transform: rotate(-3deg); }
+      100% { transform: rotate(0deg); }
+    }
+    .bottom-center {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1002;
+    }
+    .bottom-center button {
+      background: rgba(255, 255, 255, 0.85);
+      border: none;
+      border-radius: 20px;
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .overlay-image {
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100%;
+      z-index: 1000;
+      display: none;
+    }
+    
+    #stefan-button-container {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1003;
+}
+#stefan-button-container button {
+  background: rgba(255, 255, 255, 0.85);
+  border: none;
+  border-radius: 20px;
+  padding: 10px 15px;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+#rotateNotice {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.9);
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  padding-top: 40%;
+  z-index: 9999;
+}
+  </style>
+</head>
+<body>
+<body>
+  <div class="viewer-container">
+    <img id="carImage" src="" alt="Car View" />
+    <img id="carImageNext" src="" alt="Car View Next" />
+    <div class="spinner" id="spinner"></div>
+    <div class="drag-overlay" id="dragOverlay"></div>
+    
+    <div id="rotateNotice">
+  <p>🔄 Please rotate device to landscape</p>
+</div>
+
+    <div class="scene-buttons">
+      <button data-scene="beach" class="active" onclick="setScene('beach')"><span class="flag">🇩🇰</span> Denmark</button>
+      <button data-scene="fjord" onclick="setScene('fjord')"><span class="flag">🇳🇴</span> Norway</button>
+      <button data-scene="country" onclick="setScene('country')"><span class="flag">🇸🇪</span> Sweden</button>
+    </div>
+
+    <div class="toggle-buttons">
+      <button id="toggleNight">🌙 Night</button>
+      <button id="toggleRoof">🌤️ Roof</button>
+      <button id="toggleInterior">🛋️ Interior</button>
+    </div>
+
+<div id="stefan-button-container">
+  <button id="stefan-toggle">👤 Show Stefan</button>
+</div>
+
+    <img id="stefan-overlay" src="stefan.png" alt="Stefan" class="overlay-image" style="display: none;">
+
+    <div class="arrow left" id="arrowLeft"><span>&larr;</span></div>
+    <div class="arrow right" id="arrowRight"><span>&rarr;</span></div>
+  </div>
+
+  <script>
+document.getElementById('stefan-toggle').addEventListener('click', () => {
+  const overlay = document.getElementById('stefan-overlay');
+  const button = document.getElementById('stefan-toggle');
+  const isHidden = overlay.style.display === 'none' || !overlay.style.display;
+
+  if (isHidden) {
+    overlay.src = isNight ? 'stefan_night.png' : 'stefan_day.png';
+    overlay.style.display = 'block';
+    button.textContent = '🙈 Hide Stefan';
+  } else {
+    overlay.style.display = 'none';
+    button.textContent = '👤 Show Stefan';
+  }
+});
+  </script>
+
+<script>
+let currentScene = "beach";
+</script>
+
+
+  <script>
+
+  
+    const total360 = 36;
+    let currentFrame = 0;
+    let isInterior = false;
+    let isNight = false;
+    let isRoofOpen = false;
+    let interiorIndex = 1;
+
+    const img = document.getElementById("carImage");
+    const imgNext = document.getElementById("carImageNext");
+    const spinner = document.getElementById("spinner");
+    const dragOverlay = document.getElementById("dragOverlay");
+    const arrowLeft = document.getElementById("arrowLeft");
+    const arrowRight = document.getElementById("arrowRight");
+
+    const toggleInterior = document.getElementById("toggleInterior");
+    const toggleNight = document.getElementById("toggleNight");
+    const toggleRoof = document.getElementById("toggleRoof");
+
+    const baseURL = "https://europe.starconnect-ce.i.mercedes-benz.com/iris/iris.png?COSY-EU-100-1713d0VXq7xXqtyO67PobzIr3eWsrrCsdRRzwQZhZBPGE1UHFm9tui9QC%25T4DkzyVDWm7YVqdEWFge4buRcUbgDxXGmgg1J0hj0wOB%25uBZbAyR0FI5Ywl9QCrZ9DkznUZWm7o37dhKLhRf%25va%25FEyLHXKlYa8DK2rHiEwpn84vpuoigKi3M4P55NTgeCSj6P86IVSei8cqts4ifRcUg3DxXGPul1J0eE2wOBswvZbAU1PFI5GGi9QCmd9DkzcN8Wm7XmFdhKJhef%25vO%25YEyLbXPlYaIla2rHQaqpn8kMRuoimTz3M4x%252NTgqdCj6PRdjVSexfLqts1EfRcUwEUxXGZlO1J0F1KwOB9wwZbAnNEFI5ofP9QC6d4DkzSVZWm7tVVdhKc1Kf%25vXwsEyLJZBlYaOFv2rHbX0pn8I18uoiEiH3M4lw6NTg24Bj6PZfAVSevSLqtsLnsRcUqlDxXGR2V1J0xpbwOB1pHZbAwuQFI5Zn59QCFo4Dkz9DpWm7DWFdhKWdqf%25vd9sEyLfrBlYaEnv2rHfrHpn8Ed8uoiMrx3M4Ta1NTgC%25Sj6PzRPVSe785qtsKOvRcUvIHxXGLqV1J0GJiwOB0OGZbABouFI5AU59QC5xHDkzd04Wm7fGidhKE0Kf%25vlB0EyL2AKlYaZua2rHFM2pn89TCuoivjl3M4LLMNTgaFpj6PHpvVSe8ugqtsi3fRcYvhPNZCBKxvuaywdsUfxGsgOOAaZH0uGH1p8aKMKfsfQeyrIgkeJ5OCn10GnER1qkl4Jt3";
+
+    function getImageUrl() {
+      let suffix = "";
+      if (isNight) suffix += ",SZN";
+      if (isRoofOpen) suffix += ",DZO";
+
+      if (!isInterior) {
+        const angle = (currentFrame * 10).toString().padStart(3, '0');
+        return `${baseURL}&&BKGND=9&IMGT=P27&POV=BE${angle}${suffix}`;
+      } else {
+        return `${baseURL}&&BKGND=9&IMGT=P27&POV=BI${interiorIndex}${suffix}`;
+      }
+    }
+    
+function setScene(scene) {
+  currentScene = scene;
+
+  // Update active class
+  document.querySelectorAll(".scene-buttons button").forEach(btn =>
+    btn.classList.remove("active")
+  );
+  document.querySelector(`.scene-buttons button[data-scene="${scene}"]`)
+    .classList.add("active");
+
+  updateImage({ skipFade: true });
+}
+
+    function updateImage({ skipFade = false } = {}) {
+      const newCarSrc = getImageUrl();
+      let newBg;
+      if (isInterior) {
+        const mode = isNight ? 'night' : 'day';
+        newBg = `url('${currentScene}_interior_${interiorIndex}_${mode}.jpg')`;
+      } else {
+        newBg = isNight ? `url('${currentScene}_night.jpg')` : `url('${currentScene}_day.jpg')`;
+      }
+
+if (skipFade) {
+  img.src = newCarSrc;
+
+document.body.classList.add('no-bg-transition');
+document.body.style.backgroundImage = newBg;
+
+requestAnimationFrame(() => {
+  document.body.classList.remove('no-bg-transition');
+});
+
+  updateUI();
+  return;
+}
+
+      let spinnerTimeout = setTimeout(() => {
+        spinner.style.display = "block";
+      }, 1000);
+
+      let carLoaded = false;
+      let bgLoaded = false;
+
+      const carImg = new Image();
+      carImg.onload = () => {
+        carLoaded = true;
+        checkAndSwitch();
+      };
+      carImg.src = newCarSrc;
+
+      const bgImg = new Image();
+      bgImg.onload = () => {
+        bgLoaded = true;
+        checkAndSwitch();
+      };
+      bgImg.src = newBg.replace("url('", '').replace("')", '');
+
+
+
+      function checkAndSwitch() {
+        if (carLoaded && bgLoaded) {
+          clearTimeout(spinnerTimeout);
+          spinner.style.display = "none";
+
+          imgNext.onload = () => {
+            requestAnimationFrame(() => {
+              document.body.style.backgroundImage = newBg;
+              img.classList.add("dimming");
+              imgNext.style.opacity = 1;
+
+              setTimeout(() => {
+                img.src = newCarSrc;
+                imgNext.style.opacity = 0;
+                img.classList.remove("dimming");
+              }, 50);
+            });
+          };
+          imgNext.src = newCarSrc;
+
+          updateUI();
+        }
+      }
+    }
+
+    function updateUI() {
+      arrowLeft.classList.toggle('hidden', !isInterior || interiorIndex === 1);
+      arrowRight.classList.toggle('hidden', !isInterior || interiorIndex === 5);
+      toggleInterior.textContent = isInterior ? "🚙 Exterior" : "🛋️ Interior";
+      toggleNight.textContent = isNight ? "☀️ Day" : "🌙 Night";
+      toggleRoof.textContent = isRoofOpen ? "⬇️ Close Roof" : "⬆️ Open Roof";
+    }
+    function updateStefanOverlay() {
+  const stefanOverlay = document.getElementById("stefan-overlay");
+  if (stefanOverlay.style.display !== "none") {
+    stefanOverlay.src = isNight ? "stefan_night.png" : "stefan_day.png";
+  }
+}
+
+toggleInterior.onclick = () => {
+  const wasInterior = isInterior;
+  isInterior = !isInterior;
+  const skipFade = wasInterior || isInterior;
+  updateImage({ skipFade });
+
+  if (isInterior && interiorIndex === 5) {
+    document.getElementById('stefan-overlay').style.display = 'none';
+    document.getElementById('stefan-toggle').style.display = 'none';
+} else {
+  const overlay = document.getElementById('stefan-overlay');
+  const button = document.getElementById('stefan-toggle');
+  button.style.display = 'block';
+  button.textContent = overlay.style.display === 'none' || !overlay.style.display
+    ? '👤 Show Stefan'
+    : '🙈 Hide Stefan';
+}
+};
+
+toggleNight.onclick = () => {
+  isNight = !isNight;
+  updateImage()
+
+  const newCarSrc = getImageUrl();
+const mode = isNight ? 'night' : 'day';
+const newBg = isInterior
+  ? `url('${currentScene}_interior_${interiorIndex}_${mode}.jpg')`
+  : `url('${currentScene}_${mode}.jpg')`;
+
+  const carImg = new Image();
+  const bgImg = new Image();
+
+  let carReady = false;
+  let bgReady = false;
+
+  carImg.onload = () => {
+    carReady = true;
+    check();
+  };
+  carImg.src = newCarSrc;
+
+  bgImg.onload = () => {
+    bgReady = true;
+    check();
+  };
+  bgImg.src = newBg.replace("url('", '').replace("')", '');
+
+
+
+function check() {
+  if (carReady && bgReady) {
+    imgNext.onload = () => {
+      requestAnimationFrame(() => {
+        document.body.style.backgroundImage = newBg;
+        img.classList.add("dimming");
+        imgNext.style.opacity = 1;
+        setTimeout(() => {
+          img.src = newCarSrc;
+          imgNext.style.opacity = 0;
+          img.classList.remove("dimming");
+        }, 50);
+      });
+    };
+    imgNext.src = newCarSrc;
+    updateStefanOverlay(); // <-- this is the line to add
+  }
+}
+};
+
+    toggleRoof.onclick = () => {
+      const wasRoofOpen = isRoofOpen;
+      isRoofOpen = !isRoofOpen;
+      const skipFade = wasRoofOpen && !isRoofOpen;
+      updateImage({ skipFade });
+    };
+
+arrowLeft.onclick = () => {
+  if (interiorIndex > 1) {
+    interiorIndex--;
+    updateImage({ skipFade: true });
+
+if (interiorIndex === 4) {
+  const overlay = document.getElementById('stefan-overlay');
+  const button = document.getElementById('stefan-toggle');
+  button.style.display = 'block';
+  button.textContent = overlay.style.display === 'none' || !overlay.style.display
+    ? '👤 Show Stefan'
+    : '🙈 Hide Stefan';
+}
+  }
+};
+
+arrowRight.onclick = () => {
+  if (interiorIndex < 5) {
+    interiorIndex++;
+    updateImage({ skipFade: true });
+
+    if (interiorIndex === 5) {
+      document.getElementById('stefan-overlay').style.display = 'none';
+      document.getElementById('stefan-toggle').style.display = 'none';
+    }
+  }
+};
+
+    let isDragging = false;
+    let startX = 0;
+
+    dragOverlay.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      startX = e.clientX;
+      dragOverlay.classList.add("dragging");
+    });
+
+    window.addEventListener("mouseup", () => {
+      isDragging = false;
+      dragOverlay.classList.remove("dragging");
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!isDragging || isInterior) return;
+      const delta = e.clientX - startX;
+      if (Math.abs(delta) > 10) {
+        currentFrame += delta > 0 ? 1 : -1;
+        if (currentFrame < 0) currentFrame = total360 - 1;
+        if (currentFrame >= total360) currentFrame = 0;
+        updateImage({ skipFade: true });
+        startX = e.clientX;
+      }
+    });
+
+    for (let i = 0; i < total360; i++) {
+      const angle = (i * 10).toString().padStart(3, '0');
+      const preloadImg = new Image();
+      preloadImg.src = `${baseURL}&&BKGND=9&IMGT=P27&POV=BE${angle}`;
+    }
+    const preloadNight = new Image();
+    preloadNight.src = `${baseURL}&&BKGND=9&IMGT=P27&POV=BE000,SZN`;
+    const preloadRoof = new Image();
+    preloadRoof.src = `${baseURL}&&BKGND=9&IMGT=P27&POV=BE000,DZO`;
+
+updateImage();
+
+let gestureStartX = 0;
+let gestureEndX = 0;
+let gestureActive = false;
+
+// Touch Events
+dragOverlay.addEventListener('touchstart', (e) => {
+  if (!isInterior) return;
+  gestureActive = true;
+  gestureStartX = e.changedTouches[0].screenX;
+});
+
+dragOverlay.addEventListener('touchend', (e) => {
+  if (!isInterior || !gestureActive) return;
+  gestureEndX = e.changedTouches[0].screenX;
+  handleSwipeGesture();
+  gestureActive = false;
+});
+
+// Mouse Events
+dragOverlay.addEventListener('mousedown', (e) => {
+  if (!isInterior) return;
+  gestureActive = true;
+  gestureStartX = e.clientX;
+});
+
+window.addEventListener('mouseup', (e) => {
+  if (!isInterior || !gestureActive) return;
+  gestureEndX = e.clientX;
+  handleSwipeGesture();
+  gestureActive = false;
+});
+
+function handleSwipeGesture() {
+  const threshold = 30;
+  const delta = gestureEndX - gestureStartX;
+
+  if (Math.abs(delta) > threshold) {
+    if (delta < 0 && interiorIndex < 5) {
+      // swipe left
+      interiorIndex++;
+      updateImage({ skipFade: true });
+      if (interiorIndex === 5) {
+        document.getElementById('stefan-overlay').style.display = 'none';
+        document.getElementById('stefan-toggle').style.display = 'none';
+      }
+    } else if (delta > 0 && interiorIndex > 1) {
+      // swipe right
+      interiorIndex--;
+      updateImage({ skipFade: true });
+      if (interiorIndex === 4) {
+        const overlay = document.getElementById('stefan-overlay');
+        const button = document.getElementById('stefan-toggle');
+        button.style.display = 'block';
+        button.textContent = overlay.style.display === 'none' || !overlay.style.display
+          ? '👤 Show Stefan'
+          : '🙈 Hide Stefan';
+      }
+    }
+  }
+}
+
+// Initial Rotation mit Preload
+const initialFrames = [0, 35, 34, 33];
+const preloadImages = [];
+let loadedCount = 0;
+
+// Zeige Spinner
+spinner.style.display = "block";
+
+// Lade alle 4 Bilder vor
+initialFrames.forEach((frameIndex) => {
+  const angle = (frameIndex * 10).toString().padStart(3, '0');
+  const img = new Image();
+  img.onload = () => {
+    loadedCount++;
+    if (loadedCount === initialFrames.length) {
+      spinner.style.display = "none";
+      startInitialRotation();
+    }
+  };
+  img.src = `${baseURL}&&BKGND=9&IMGT=P27&POV=BE${angle}`;
+  preloadImages.push(img);
+});
+
+function preloadInSequence() {
+  const angles = [...Array(36).keys()].map(i => (i * 10).toString().padStart(3, '0'));
+
+  const tasks = [];
+
+  // 1. Open Roof BE330
+  tasks.push(`${baseURL}&&BKGND=9&IMGT=P27&POV=BE330,DZO`);
+
+  // 2. Interior Frame 1
+  tasks.push(`${baseURL}&&BKGND=9&IMGT=P27&POV=BI1`);
+
+  // 3. Night BE330
+  tasks.push(`${baseURL}&&BKGND=9&IMGT=P27&POV=BE330,SZN`);
+
+  // 4. Night BE330 + Open Roof
+  tasks.push(`${baseURL}&&BKGND=9&IMGT=P27&POV=BE330,SZN,DZO`);
+
+  // 5. Interior Frames 2–5
+  for (let i = 2; i <= 5; i++) {
+    tasks.push(`${baseURL}&&BKGND=9&IMGT=P27&POV=BI${i}`);
+  }
+
+  // 6. Open Roof Frames außer 330
+  angles.forEach((angle) => {
+    if (angle !== '330') {
+      tasks.push(`${baseURL}&&BKGND=9&IMGT=P27&POV=BE${angle},DZO`);
+    }
+  });
+
+  // 7. Night Interior Frames 1–5
+  for (let i = 1; i <= 5; i++) {
+    tasks.push(`${baseURL}&&BKGND=9&IMGT=P27&POV=BI${i},SZN`);
+  }
+
+  // 8. Night Exterior Frames außer 330
+  angles.forEach((angle) => {
+    if (angle !== '330') {
+      tasks.push(`${baseURL}&&BKGND=9&IMGT=P27&POV=BE${angle},SZN`);
+    }
+  });
+
+  let index = 0;
+  const loadNext = () => {
+    if (index >= tasks.length) return;
+
+    const img = new Image();
+    img.onload = img.onerror = () => {
+      index++;
+      loadNext();
+    };
+    img.src = tasks[index];
+  };
+
+  loadNext();
+}
+
+function startInitialRotation() {
+  let spinIndex = 0;
+  const spinFrames = initialFrames.length;
+
+  const spinInterval = setInterval(() => {
+    if (spinIndex >= spinFrames) {
+      clearInterval(spinInterval);
+      return;
+    }
+    currentFrame = initialFrames[spinIndex];
+    updateImage({ skipFade: true });
+    spinIndex++;
+  }, 80);
+}
+function startInitialRotation() {
+  let spinIndex = 0;
+  const spinFrames = initialFrames.length;
+
+  const spinInterval = setInterval(() => {
+    if (spinIndex >= spinFrames) {
+      clearInterval(spinInterval);
+
+      // Jetzt erst weitere Bilder nachladen
+      preloadInSequence();
+      return;
+    }
+    currentFrame = initialFrames[spinIndex];
+    updateImage({ skipFade: true });
+    spinIndex++;
+  }, 80);
+}
+
+function checkOrientation() {
+  const rotateNotice = document.getElementById("rotateNotice");
+  const isMobile = window.innerWidth <= 768;
+  const isPortrait = window.innerHeight > window.innerWidth;
+
+  if (isMobile && isPortrait) {
+    rotateNotice.style.display = "block";
+  } else {
+    rotateNotice.style.display = "none";
+  }
+}
+
+window.addEventListener("load", checkOrientation);
+window.addEventListener("resize", checkOrientation);
+window.addEventListener("orientationchange", checkOrientation);
+
+  </script>
+</body>
+</html>
