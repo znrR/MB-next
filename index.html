@@ -564,6 +564,31 @@ window.addEventListener('mouseup', (e) => {
   gestureActive = false;
 });
 
+// Touch-Unterstützung
+dragOverlay.addEventListener("touchstart", (e) => {
+  if (isInterior) return;
+  isDragging = true;
+  startX = e.touches[0].clientX;
+  dragOverlay.classList.add("dragging");
+}, { passive: true });
+
+window.addEventListener("touchend", () => {
+  isDragging = false;
+  dragOverlay.classList.remove("dragging");
+}, { passive: true });
+
+window.addEventListener("touchmove", (e) => {
+  if (!isDragging || isInterior) return;
+  const delta = e.touches[0].clientX - startX;
+  if (Math.abs(delta) > 10) {
+    currentFrame += delta > 0 ? 1 : -1;
+    if (currentFrame < 0) currentFrame = total360 - 1;
+    if (currentFrame >= total360) currentFrame = 0;
+    updateImage({ skipFade: true });
+    startX = e.touches[0].clientX;
+  }
+}, { passive: true });
+
 function handleSwipeGesture() {
   const threshold = 30;
   const delta = gestureEndX - gestureStartX;
